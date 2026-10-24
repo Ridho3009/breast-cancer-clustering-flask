@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}UMAP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-graph-up me-2 text-accent3"></i>UMAP</h1>
+  <p>Uniform Manifold Approximation and Projection — reduksi dimensi non-linear yang lebih cepat dari t-SNE.</p>
+</div>
+
+{% if not umap_tersedia %}
+<!-- ── Pesan Error UMAP Tidak Tersedia ── -->
+<div class="card-dark" style="border-color:rgba(247,129,102,0.4);">
+  <div class="text-center py-4">
+    <i class="bi bi-exclamation-triangle" style="font-size:3rem; color:var(--accent3);"></i>
+    <h4 class="mt-3 text-accent3">Pustaka UMAP Tidak Tersedia atau Gagal Dimuat</h4>
+    <p style="color:var(--text-muted); max-width:550px; margin:1rem auto;">
+      Modul <code style="color:var(--accent);">umap-learn</code> atau pustaka akselerasi <code>numba</code> tidak berhasil diinisialisasi.
+      Pastikan pustaka terinstal dan kompatibel dengan versi Python Anda:
+    </p>
+    <pre style="background:#0d1117; border:1px solid var(--border); border-radius:8px;
+         padding:1rem; display:inline-block; text-align:left; color:var(--accent2);">
+pip install umap-learn</pre>
+    <p class="mt-3" style="color:var(--text-muted); font-size:0.85rem;">
+      Setelah instalasi selesai, restart aplikasi Flask dan muat ulang halaman ini.
+    </p>
+  </div>
+</div>
+
+{% else %}
+
+<!-- ── Penjelasan UMAP ── -->
+<div class="card-dark mb-4" style="border-color:rgba(247,129,102,0.3);">
+  <h5 class="text-accent3 mb-2"><i class="bi bi-info-circle me-2"></i>Parameter UMAP</h5>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <p style="color:var(--text-muted); font-size:0.85rem; line-height:1.7; margin:0;">
+        <strong style="color:var(--text);">n_neighbors</strong>: Jumlah tetangga terdekat yang
+        dipertimbangkan saat membangun graf. Nilai kecil = fokus lokal (detail klaster),
+        nilai besar = mempertahankan struktur global.
+      </p>
+    </div>
+    <div class="col-md-6">
+      <p style="color:var(--text-muted); font-size:0.85rem; line-height:1.7; margin:0;">
+        <strong style="color:var(--text);">min_dist</strong>: Jarak minimum antar titik dalam
+        ruang 2D. Nilai kecil = titik lebih padat/berkelompok,
+        nilai besar = titik lebih tersebar.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Plot Grid UMAP ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-2">
+    <i class="bi bi-grid-3x2 me-2 text-accent3"></i>
+    Grid UMAP: n_neighbors × min_dist (3 × 2)
+  </h5>
+  <p style="color:var(--text-muted); font-size:0.83rem; margin-bottom:1rem;">
+    Setiap sel menunjukkan hasil UMAP dengan kombinasi parameter berbeda,
+    diwarnai berdasarkan label <strong style="color:var(--text);">K-Means terbaik</strong>.
+  </p>
+  <img src="{{ url_for('static', filename=path_umap) }}"
+       alt="UMAP Grid Plot" class="plot-img" />
+</div>
+
+<!-- ── Tabel Waktu UMAP ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3">
+    <i class="bi bi-stopwatch me-2 text-accent"></i>Waktu Eksekusi UMAP per Kombinasi
+  </h5>
+  <div class="table-responsive">
+    <table class="table table-dark-custom table-striped table-hover">
+      <thead>
+        <tr>
+          <th>n_neighbors</th>
+          <th class="text-center">min_dist</th>
+          <th class="text-center">Waktu Eksekusi</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for res in umap_results %}
+        <tr {% if res.n_neighbors == 15 and res.min_dist == 0.1 %}class="row-highlight"{% endif %}>
+          <td>
+            <span style="font-family:'JetBrains Mono',monospace; font-weight:600;">
+              {{ res.n_neighbors }}
+            </span>
+          </td>
+          <td class="text-center" style="font-family:'JetBrains Mono',monospace;">
+            {{ res.min_dist }}
+          </td>
+          <td class="text-center">
+            <span style="font-family:'JetBrains Mono',monospace; color:var(--accent3);">
+              {{ res.waktu_detik }} detik
+            </span>
+          </td>
+          <td style="font-size:0.82rem; color:var(--text-muted);">
+            {% if res.n_neighbors == 15 and res.min_dist == 0.1 %}
+            <span class="badge-ml" style="background:rgba(63,185,80,0.12);
+                  color:var(--accent2); border-color:rgba(63,185,80,0.3);">
+              <i class="bi bi-star-fill me-1"></i>Dipakai di Vis. Gabungan
+            </span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Perbandingan t-SNE vs UMAP ── -->
+<div class="card-dark">
+  <h5 class="mb-3">
+    <i class="bi bi-table me-2 text-accent"></i>Perbandingan Waktu: t-SNE vs UMAP
+  </h5>
+
+  {# Hitung statistik t-SNE #}
+  {% set ns = namespace(total=0.0, count=0) %}
+  {% if tsne_results %}
+    {% for r in tsne_results %}
+      {% if not r.dilewati %}
+        {% set ns.total = ns.total + r.waktu_detik %}
+        {% set ns.count = ns.count + 1 %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  {% set tsne_avg = (ns.total / ns.count) if ns.count > 0 else 0.0 %}
+
+  {# Hitung statistik UMAP #}
+  {% set ns2 = namespace(total=0.0, count=0) %}
+  {% for res in umap_results %}
+    {% set ns2.total = ns2.total + res.waktu_detik %}
+    {% set ns2.count = ns2.count + 1 %}
+  {% endfor %}
+  {% set umap_avg = (ns2.total / ns2.count) if ns2.count > 0 else 0.0 %}
+
+  <div class="row g-4">
+    <!-- t-SNE -->
+    <div class="col-md-6">
+      <h6 class="text-accent2 mb-3">
+        <i class="bi bi-map me-1"></i>t-SNE
+      </h6>
+      {% if tsne_results %}
+      <table class="table table-dark-custom table-sm">
+        <thead>
+          <tr>
+            <th>Perplexity</th>
+            <th class="text-center">Waktu (detik)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in tsne_results %}
+          <tr>
+            <td style="font-family:'JetBrains Mono',monospace;">{{ r.perplexity }}</td>
+            <td class="text-center" style="font-family:'JetBrains Mono',monospace;
+                color:{% if r.dilewati %}var(--text-muted){% else %}var(--accent2){% endif %};">
+              {% if r.dilewati %}dilewati{% else %}{{ r.waktu_detik }}s{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          <tr style="border-top: 2px solid var(--border);">
+            <td><strong style="color:var(--text);">Total</strong></td>
+            <td class="text-center">
+              <strong style="color:var(--accent2); font-family:'JetBrains Mono',monospace;">
+                {{ "%.2f"|format(ns.total) }}s
+              </strong>
+            </td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text);">Rata-rata per proses</strong></td>
+            <td class="text-center">
+              <strong style="color:var(--accent2); font-family:'JetBrains Mono',monospace;">
+                {{ "%.2f"|format(tsne_avg) }}s
+              </strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted" style="font-size:0.85rem;">
+        Belum ada data t-SNE. Buka halaman t-SNE terlebih dahulu.
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- UMAP -->
+    <div class="col-md-6">
+      <h6 class="text-accent3 mb-3">
+        <i class="bi bi-graph-up me-1"></i>UMAP
+      </h6>
+      <table class="table table-dark-custom table-sm">
+        <thead>
+          <tr>
+            <th>n_neighbors / min_dist</th>
+            <th class="text-center">Waktu (detik)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for res in umap_results %}
+          <tr>
+            <td style="font-family:'JetBrains Mono',monospace; font-size:0.82rem;">
+              {{ res.n_neighbors }} / {{ res.min_dist }}
+            </td>
+            <td class="text-center" style="font-family:'JetBrains Mono',monospace;
+                color:var(--accent3);">
+              {{ res.waktu_detik }}s
+            </td>
+          </tr>
+          {% endfor %}
+          <tr style="border-top: 2px solid var(--border);">
+            <td><strong style="color:var(--text);">Total</strong></td>
+            <td class="text-center">
+              <strong style="color:var(--accent3); font-family:'JetBrains Mono',monospace;">
+                {{ "%.2f"|format(ns2.total) }}s
+              </strong>
+            </td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text);">Rata-rata per proses</strong></td>
+            <td class="text-center">
+              <strong style="color:var(--accent3); font-family:'JetBrains Mono',monospace;">
+                {{ "%.2f"|format(umap_avg) }}s
+              </strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ringkasan Rata-rata per Proses -->
+  {% if ns.count > 0 %}
+  <p class="mt-3 mb-0" style="font-size:0.84rem; color:var(--text-muted);">
+    Rata-rata per proses: UMAP {{ "%.2f"|format(umap_avg) }} detik, t-SNE {{ "%.2f"|format(tsne_avg) }} detik (UMAP menjalankan {{ ns2.count }} kombinasi, t-SNE {{ ns.count }} kombinasi).
+  </p>
+  {% else %}
+  <p class="mt-3 mb-0" style="font-size:0.84rem; color:var(--text-muted);">
+    Rata-rata per proses: UMAP {{ "%.2f"|format(umap_avg) }} detik (UMAP menjalankan {{ ns2.count }} kombinasi). Buka halaman t-SNE terlebih dahulu untuk melihat perbandingan.
+  </p>
+  {% endif %}
+
+  <!-- Kesimpulan Perbandingan -->
+  <div class="mt-3 p-3" style="background:rgba(247,129,102,0.06);
+       border-radius:8px; border:1px solid rgba(247,129,102,0.15);">
+    <p style="font-size:0.84rem; color:var(--text-muted); margin:0; line-height:1.7;">
+      <i class="bi bi-lightning-fill text-accent3 me-2"></i>
+      <strong style="color:var(--text);">Kesimpulan:</strong>
+      {% if ns.count > 0 %}
+        {% if umap_avg < tsne_avg %}
+          UMAP lebih cepat {{ "%.2f"|format(tsne_avg - umap_avg) }} detik per proses dibandingkan t-SNE ({{ "%.2f"|format(umap_avg) }}s vs {{ "%.2f"|format(tsne_avg) }}s).
+        {% elif tsne_avg < umap_avg %}
+          t-SNE lebih cepat {{ "%.2f"|format(umap_avg - tsne_avg) }} detik per proses dibandingkan UMAP ({{ "%.2f"|format(tsne_avg) }}s vs {{ "%.2f"|format(umap_avg) }}s).
+        {% else %}
+          Kecepatan rata-rata per proses UMAP dan t-SNE seimbang ({{ "%.2f"|format(umap_avg) }}s).
+        {% endif %}
+      {% else %}
+        Buka halaman t-SNE terlebih dahulu untuk membandingkan kecepatan rata-rata per proses dengan UMAP.
+      {% endif %}
+      <br>
+      <strong style="color:var(--text);">Catatan teori (bukan hasil pengukuran aplikasi):</strong>
+      UMAP cenderung lebih baik mempertahankan struktur global data dibandingkan t-SNE.
+    </p>
+  </div>
+
+  <!-- Catatan Pemanasan -->
+  <div class="mt-3 p-3" style="background:rgba(76,154,255,0.06);
+       border-radius:8px; border:1px solid rgba(76,154,255,0.15);">
+    <p style="font-size:0.82rem; color:var(--text-muted); margin:0; line-height:1.7;">
+      <i class="bi bi-info-circle text-accent me-2"></i>
+      <strong style="color:var(--text);">Catatan:</strong>
+      Waktu UMAP tidak menyertakan kompilasi awal (pemanasan). random_state=42 dipakai agar hasil dapat direproduksi, sehingga eksekusi berjalan tanpa paralelisme.
+    </p>
+  </div>
+</div>
+
+{% endif %}
+
+<!-- ── Navigasi ── -->
+<div class="mt-4 d-flex gap-2">
+  <a href="{{ url_for('visualisasi') }}" class="btn-primary-custom">
+    <i class="bi bi-arrow-right me-1"></i>Lanjut ke Visualisasi Gabungan
+  </a>
+  <a href="{{ url_for('tsne') }}" class="btn-outline-custom">
+    <i class="bi bi-arrow-left me-1"></i>Kembali ke t-SNE
+  </a>
+</div>
+{% endblock %}

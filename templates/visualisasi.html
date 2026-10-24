@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Visualisasi Gabungan{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-grid-3x2 me-2 text-accent"></i>Visualisasi Gabungan</h1>
+  <p>
+    Semua metode reduksi dimensi &amp; klasterisasi dalam satu tampilan.
+    {% if ada_label %}Termasuk baris perbandingan label asli.{% endif %}
+  </p>
+</div>
+
+<!-- ── Ringkasan Parameter yang Digunakan ── -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card-dark">
+      <div class="d-flex align-items-center gap-3">
+        <div style="background:rgba(63,185,80,0.12);border-radius:10px;padding:0.75rem;">
+          <i class="bi bi-people fs-4 text-accent2"></i>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">K-Means</div>
+          <div style="font-weight:700;font-size:1.1rem;color:var(--accent2);">
+            K = {{ k_terbaik }} (terbaik)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-dark">
+      <div class="d-flex align-items-center gap-3">
+        <div style="background:rgba(247,129,102,0.12);border-radius:10px;padding:0.75rem;">
+          <i class="bi bi-scatter-chart fs-4 text-accent3"></i>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">DBSCAN</div>
+          <div style="font-weight:700;font-size:0.95rem;color:var(--accent3);">
+            eps={{ dbscan_info.eps }}, ms={{ dbscan_info.min_samples }}
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">
+            {{ dbscan_info.n_clusters }} klaster, {{ dbscan_info.n_noise }} noise
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-dark">
+      <div class="d-flex align-items-center gap-3">
+        <div style="background:rgba(88,166,255,0.12);border-radius:10px;padding:0.75rem;">
+          <i class="bi bi-grid-3x2 fs-4 text-accent"></i>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">Reduksi Dimensi</div>
+          <div style="font-weight:600;font-size:0.88rem;color:var(--accent);">
+            PCA | t-SNE (p=30) | UMAP (nn=15)
+          </div>
+          {% if not umap_tersedia %}
+          <div style="font-size:0.78rem;color:var(--accent3);">
+            <i class="bi bi-exclamation-triangle me-1"></i>UMAP tidak tersedia
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Legenda Baris ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3">
+    <i class="bi bi-list-ul me-2 text-accent"></i>Struktur Subplot
+  </h5>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="d-flex align-items-start gap-2">
+        <div style="width:14px;height:14px;border-radius:3px;
+             background:rgba(63,185,80,0.4);flex-shrink:0;margin-top:3px;"></div>
+        <div>
+          <div style="font-weight:600;font-size:0.88rem;color:var(--accent2);">Baris 1 — K-Means</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);">
+            Warna menunjukkan klaster K-Means (K={{ k_terbaik }}).
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="d-flex align-items-start gap-2">
+        <div style="width:14px;height:14px;border-radius:3px;
+             background:rgba(247,129,102,0.4);flex-shrink:0;margin-top:3px;"></div>
+        <div>
+          <div style="font-weight:600;font-size:0.88rem;color:var(--accent3);">Baris 2 — DBSCAN</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);">
+            Warna = klaster DBSCAN. Abu-abu = noise.
+          </div>
+        </div>
+      </div>
+    </div>
+    {% if ada_label %}
+    <div class="col-md-4">
+      <div class="d-flex align-items-start gap-2">
+        <div style="width:14px;height:14px;border-radius:3px;
+             background:rgba(88,166,255,0.4);flex-shrink:0;margin-top:3px;"></div>
+        <div>
+          <div style="font-weight:600;font-size:0.88rem;color:var(--accent);">Baris 3 — Label Asli</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);">
+            Label asli sebagai pembanding (tidak dipakai saat klasterisasi).
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Plot Gabungan ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-2">
+    <i class="bi bi-image me-2 text-accent"></i>
+    Subplot
+    {% if ada_label %}3{% else %}2{% endif %}
+    Baris × 3 Kolom
+  </h5>
+  <p style="color:var(--text-muted); font-size:0.83rem; margin-bottom:1rem;">
+    Kolom: <strong style="color:var(--text);">PCA</strong> |
+    <strong style="color:var(--text);">t-SNE (perplexity=30)</strong> |
+    <strong style="color:var(--text);">UMAP (n_neighbors=15, min_dist=0.1)</strong>
+  </p>
+  <img src="{{ url_for('static', filename=path_combined) }}"
+       alt="Visualisasi Gabungan" class="plot-img" />
+</div>
+
+<!-- ── Analisis Perbandingan ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3">
+    <i class="bi bi-clipboard-data me-2 text-accent"></i>Panduan Interpretasi
+  </h5>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="p-3" style="background:rgba(88,166,255,0.06);
+           border-radius:8px; border:1px solid rgba(88,166,255,0.15);">
+        <h6 class="text-accent mb-2">Membandingkan Kolom (Metode Reduksi)</h6>
+        <ul style="color:var(--text-muted); font-size:0.83rem; padding-left:1.2rem; margin:0;">
+          <li><strong style="color:var(--text);">PCA</strong>: Linear. Cepat, tapi mungkin tidak menangkap struktur non-linear.</li>
+          <li class="mt-1"><strong style="color:var(--text);">t-SNE</strong>: Mempertahankan hubungan lokal dengan baik. Cocok untuk visualisasi klaster.</li>
+          <li class="mt-1"><strong style="color:var(--text);">UMAP</strong>: Menyeimbangkan struktur lokal dan global. Lebih cepat dari t-SNE.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3" style="background:rgba(63,185,80,0.06);
+           border-radius:8px; border:1px solid rgba(63,185,80,0.15);">
+        <h6 class="text-accent2 mb-2">Membandingkan Baris (Metode Klasterisasi)</h6>
+        <ul style="color:var(--text-muted); font-size:0.83rem; padding-left:1.2rem; margin:0;">
+          <li><strong style="color:var(--text);">K-Means</strong>: Setiap titik masuk ke salah satu dari K klaster.</li>
+          <li class="mt-1"><strong style="color:var(--text);">DBSCAN</strong>: Titik noise (abu-abu) tidak masuk klaster mana pun. Jumlah klaster ditentukan otomatis.</li>
+          {% if ada_label %}
+          <li class="mt-1"><strong style="color:var(--text);">Label Asli</strong>: Pembanding — apakah klaster yang ditemukan sesuai dengan diagnosis nyata?</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Navigasi Akhir ── -->
+<div class="card-dark" style="background:linear-gradient(135deg,rgba(88,166,255,0.05),rgba(22,27,34,1));">
+  <h5 class="mb-3 text-accent">
+    <i class="bi bi-check-circle-fill me-2"></i>Analisis Selesai!
+  </h5>
+  <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem;">
+    Semua metode telah dijalankan dan divisualisasikan. Anda bisa kembali ke halaman mana saja
+    untuk mengeksplorasi lebih lanjut, atau mengganti sumber data di halaman Preprocessing.
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('beranda') }}" class="btn-primary-custom">
+      <i class="bi bi-house me-1"></i>Kembali ke Beranda
+    </a>
+    <a href="{{ url_for('preprocessing') }}" class="btn-outline-custom">
+      <i class="bi bi-filter me-1"></i>Ganti Sumber Data
+    </a>
+    <a href="{{ url_for('kmeans') }}" class="btn-outline-custom">
+      <i class="bi bi-people me-1"></i>K-Means
+    </a>
+    <a href="{{ url_for('pca') }}" class="btn-outline-custom">
+      <i class="bi bi-arrows-collapse me-1"></i>PCA
+    </a>
+  </div>
+</div>
+{% endblock %}

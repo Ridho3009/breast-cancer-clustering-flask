@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}DBSCAN{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-scatter-chart me-2 text-accent3"></i>DBSCAN</h1>
+  <p>Density-Based Spatial Clustering of Applications with Noise — menemukan klaster berbasis kepadatan titik.</p>
+</div>
+
+<!-- ── Penjelasan Singkat DBSCAN ── -->
+<div class="card-dark mb-4" style="border-color:rgba(247,129,102,0.3);">
+  <div class="row g-3 align-items-center">
+    <div class="col-md-8">
+      <h5 class="text-accent3 mb-2"><i class="bi bi-info-circle me-2"></i>Parameter DBSCAN</h5>
+      <ul style="color:var(--text-muted); font-size:0.86rem; padding-left:1.2rem; margin:0;">
+        <li><strong style="color:var(--text);">eps (ε)</strong>: Radius lingkungan. Titik dalam radius ini dianggap "tetangga".</li>
+        <li class="mt-1"><strong style="color:var(--text);">min_samples</strong>: Jumlah minimum titik dalam radius eps agar dianggap "core point".</li>
+        <li class="mt-1"><strong style="color:var(--text);">Noise (label = -1)</strong>: Titik yang tidak masuk klaster mana pun karena terlalu terisolasi.</li>
+      </ul>
+    </div>
+    <div class="col-md-4">
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-number" style="color:var(--accent3);">{{ default_dbscan.n_clusters }}</div>
+            <div class="stat-label">Klaster (default)</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-number" style="color:var(--text-muted);">{{ default_dbscan.n_noise }}</div>
+            <div class="stat-label">Noise (default)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── K-Distance Graph ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-1">
+    <i class="bi bi-graph-up me-2 text-accent"></i>K-Distance Graph
+    <small class="text-muted fw-normal">(k = {{ min_samples_default - 1 }})</small>
+  </h5>
+  <p style="color:var(--text-muted); font-size:0.83rem; margin-bottom:1rem;">
+    Grafik ini mengurutkan jarak setiap titik ke tetangga ke-{{ min_samples_default - 1 }} terdekatnya.
+    Cari titik <strong style="color:var(--text);">"lutut" (knee)</strong> — di sanalah nilai
+    <strong style="color:var(--accent3);">eps</strong> yang baik berada.
+    Estimasi otomatis: eps ≈ <strong style="color:var(--accent3);">{{ eps_knee }}</strong>.
+  </p>
+  <img src="{{ url_for('static', filename=path_kdist) }}"
+       alt="K-Distance Graph DBSCAN" class="plot-img" />
+</div>
+
+<!-- ── Tabel 3 Kombinasi Default ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3">
+    <i class="bi bi-table me-2 text-accent"></i>Tabel Kombinasi Parameter DBSCAN
+  </h5>
+  <p style="color:var(--text-muted); font-size:0.83rem; margin-bottom:1rem;">
+    Tiga kombinasi otomatis: eps lebih kecil, eps estimasi (lutut), dan eps lebih besar.
+    Kombinasi tengah dipakai sebagai default untuk visualisasi gabungan.
+  </p>
+  <div class="table-responsive">
+    <table class="table table-dark-custom table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Variasi</th>
+          <th class="text-center">eps</th>
+          <th class="text-center">min_samples</th>
+          <th class="text-center">Jumlah Klaster</th>
+          <th class="text-center">Jumlah Noise</th>
+          <th class="text-center">Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kombi in kombinasi %}{% set i = loop.index0 %}
+        <tr {% if i == 1 %}class="row-highlight"{% endif %}>
+          <td>
+            <span style="color:var(--text-muted); font-size:0.82rem;">
+              {% if i == 0 %}eps kecil{% elif i == 1 %}eps lutut (default){% else %}eps besar{% endif %}
+            </span>
+          </td>
+          <td class="text-center">
+            <span style="font-family:'JetBrains Mono',monospace; color:var(--accent3);">
+              {{ kombi.eps }}
+            </span>
+          </td>
+          <td class="text-center">
+            <span style="font-family:'JetBrains Mono',monospace;">{{ kombi.min_samples }}</span>
+          </td>
+          <td class="text-center">
+            {% if kombi.n_clusters == 0 %}
+            <span style="color:var(--accent3);">0 ⚠️</span>
+            {% else %}
+            <span style="font-weight:600; color:var(--accent2);">{{ kombi.n_clusters }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <span style="color:var(--text-muted); font-family:'JetBrains Mono',monospace;">
+              {{ kombi.n_noise }}
+            </span>
+          </td>
+          <td class="text-center">
+            {% if i == 1 %}
+            <span class="badge-ml" style="background:rgba(63,185,80,0.15);
+                  color:var(--accent2); border-color:rgba(63,185,80,0.3);">
+              <i class="bi bi-star-fill me-1"></i>Default
+            </span>
+            {% elif kombi.n_clusters == 0 %}
+            <span class="badge-ml" style="background:rgba(247,129,102,0.15);
+                  color:var(--accent3); border-color:rgba(247,129,102,0.3);">
+              Tidak ada klaster
+            </span>
+            {% else %}
+            <span style="color:var(--text-muted); font-size:0.8rem;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Scatter Plot Default ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-2">
+    <i class="bi bi-diagram-2 me-2 text-accent3"></i>
+    Scatter Plot DBSCAN (eps={{ default_dbscan.eps }}, min_samples={{ default_dbscan.min_samples }})
+  </h5>
+  <p style="color:var(--text-muted); font-size:0.83rem; margin-bottom:1rem;">
+    Divisualisasikan pada 2 komponen PCA pertama. Titik abu-abu = noise.
+  </p>
+  {% if default_dbscan.n_clusters == 0 %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    DBSCAN tidak menemukan klaster dengan parameter default ini. Semua titik dianggap noise.
+    Coba ubah parameter di form di bawah.
+  </div>
+  {% else %}
+  <img src="{{ url_for('static', filename=path_scatter) }}"
+       alt="Scatter Plot DBSCAN" class="plot-img" />
+  {% endif %}
+</div>
+
+<!-- ── Form Eksplorasi Parameter ── -->
+<div class="card-dark">
+  <h5 class="mb-3">
+    <i class="bi bi-sliders me-2 text-accent"></i>Coba Parameter Sendiri
+  </h5>
+  <form method="POST">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="eps-input">
+          eps (epsilon)
+          <span class="text-muted" style="font-size:0.78rem;">
+            — estimasi: {{ eps_knee }}
+          </span>
+        </label>
+        <input type="number" class="form-control" id="eps-input" name="eps"
+               step="0.01" min="0.01" value="{{ eps_knee }}"
+               placeholder="Contoh: {{ eps_knee }}" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="ms-input">min_samples</label>
+        <input type="number" class="form-control" id="ms-input" name="min_samples"
+               min="2" value="{{ min_samples_default }}"
+               placeholder="Contoh: {{ min_samples_default }}" />
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn-primary-custom w-100">
+          <i class="bi bi-play-fill me-1"></i>Jalankan DBSCAN
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Hasil Eksplorasi -->
+  {% if custom_result %}
+  <hr style="border-color:var(--border); margin: 1.5rem 0;" />
+  <h6 class="mb-3" style="color:var(--text-muted);">
+    Hasil: eps={{ custom_result.eps }}, min_samples={{ custom_result.min_samples }}
+  </h6>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="stat-box">
+        <div class="stat-number" style="color:var(--accent3);">{{ custom_result.n_clusters }}</div>
+        <div class="stat-label">Jumlah Klaster</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-box">
+        <div class="stat-number" style="color:var(--text-muted);">{{ custom_result.n_noise }}</div>
+        <div class="stat-label">Jumlah Noise</div>
+      </div>
+    </div>
+  </div>
+
+  {% if custom_result.error %}
+  <div class="alert alert-danger">
+    <i class="bi bi-x-circle me-2"></i>{{ custom_result.error }}
+  </div>
+  {% elif custom_result.plot_path %}
+  <img src="{{ url_for('static', filename=custom_result.plot_path) }}"
+       alt="Scatter Plot DBSCAN Custom" class="plot-img" />
+  {% endif %}
+  {% endif %}
+</div>
+
+<!-- ── Navigasi ── -->
+<div class="mt-4 d-flex gap-2">
+  <a href="{{ url_for('pca') }}" class="btn-primary-custom">
+    <i class="bi bi-arrow-right me-1"></i>Lanjut ke PCA
+  </a>
+  <a href="{{ url_for('kmeans') }}" class="btn-outline-custom">
+    <i class="bi bi-arrow-left me-1"></i>Kembali ke K-Means
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Tambahkan enumerate ke Jinja2 dari sisi klien tidak bisa,
+// tapi kita sudah pakai loop.index0 di template.
+// Script ini hanya untuk highlight baris saat hover.
+</script>
+{% endblock %}

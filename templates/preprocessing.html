@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Preprocessing{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-filter me-2 text-accent"></i>Preprocessing</h1>
+  <p>Pilih sumber data, periksa kualitas, dan terapkan StandardScaler.</p>
+</div>
+
+<!-- ── Form Pilih Sumber Data ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3"><i class="bi bi-database me-2 text-accent"></i>Pilih Sumber Data</h5>
+
+  <form method="POST" enctype="multipart/form-data" id="form-data">
+    <!-- Tab Pilihan -->
+    <div class="d-flex gap-2 mb-4">
+      <input type="radio" class="btn-check" name="sumber_data" id="opt-default"
+             value="default" {% if sumber_aktif == 'default' %}checked{% endif %} />
+      <label class="btn btn-outline-secondary w-50" for="opt-default" id="label-default">
+        <i class="bi bi-database me-1"></i>Dataset Bawaan (Breast Cancer)
+      </label>
+
+      <input type="radio" class="btn-check" name="sumber_data" id="opt-upload"
+             value="upload" {% if sumber_aktif == 'upload' %}checked{% endif %} />
+      <label class="btn btn-outline-secondary w-50" for="opt-upload" id="label-upload">
+        <i class="bi bi-upload me-1"></i>Unggah File CSV Sendiri
+      </label>
+    </div>
+
+    <!-- Opsi Unggah CSV -->
+    <div id="upload-section" style="display:none;">
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label" for="csv-file">
+            File CSV <span style="color:var(--accent3);">*</span>
+          </label>
+          <input class="form-control" type="file" id="csv-file" name="csv_file"
+                 accept=".csv" />
+          <div class="form-text text-muted">Maks. 5 MB. Hanya file .csv.</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="label-col">
+            Kolom Label (opsional)
+          </label>
+          <input class="form-control" type="text" id="label-col" name="label_column"
+                 placeholder="Contoh: target, diagnosis, label" />
+          <div class="form-text text-muted">
+            Biarkan kosong jika tidak ada kolom label.
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-secondary" style="font-size:0.82rem;">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>Aturan:</strong> Hanya kolom numerik yang dianalisis. Kolom non-numerik diabaikan.
+        Data tidak boleh memiliki missing values. Minimal 3 kolom numerik.
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary-custom">
+      <i class="bi bi-arrow-repeat me-1"></i>Muat Data
+    </button>
+  </form>
+</div>
+
+{% if kualitas %}
+
+<!-- ── Info Dataset Aktif ── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-number">{{ kualitas.n_baris }}</div>
+      <div class="stat-label">Jumlah Baris</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-number">{{ kualitas.n_kolom }}</div>
+      <div class="stat-label">Jumlah Kolom</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-number" style="color:{% if kualitas.total_missing > 0 %}var(--accent3){% else %}var(--accent2){% endif %};">
+        {{ kualitas.total_missing }}
+      </div>
+      <div class="stat-label">Total Missing Values</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-number" style="color:{% if kualitas.total_duplikat > 0 %}var(--accent3){% else %}var(--accent2){% endif %};">
+        {{ kualitas.total_duplikat }}
+      </div>
+      <div class="stat-label">Baris Duplikat</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Preview 5 Baris Pertama ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3"><i class="bi bi-table me-2 text-accent"></i>Preview Data (5 Baris Pertama)</h5>
+  <div class="table-responsive">
+    {{ preview_html | safe }}
+  </div>
+</div>
+
+<!-- ── Tipe Data & Missing Values per Kolom ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3">
+    <i class="bi bi-list-columns me-2 text-accent"></i>Informasi Kolom
+  </h5>
+  <div class="table-responsive">
+    <table class="table table-dark-custom table-striped table-hover">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nama Kolom</th>
+          <th>Tipe Data</th>
+          <th>Missing Values</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for col in kualitas.info_kolom %}
+        <tr>
+          <td class="text-muted">{{ loop.index }}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">{{ col.nama_kolom }}</td>
+          <td><span class="badge-ml">{{ col.tipe_data }}</span></td>
+          <td>
+            {% if col.missing_values > 0 %}
+            <span class="text-accent3 fw-bold">{{ col.missing_values }}</span>
+            {% else %}
+            <span class="text-accent2">0</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if col.missing_values == 0 %}
+            <i class="bi bi-check-circle-fill text-accent2"></i>
+            {% else %}
+            <i class="bi bi-exclamation-circle-fill text-accent3"></i>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Statistik Scaling ── -->
+<div class="card-dark mb-4">
+  <h5 class="mb-3">
+    <i class="bi bi-bar-chart me-2 text-accent"></i>
+    Statistik Sebelum vs Sesudah StandardScaler
+    <small class="text-muted fw-normal">(15 fitur pertama)</small>
+  </h5>
+  <div class="table-responsive">
+    <table class="table table-dark-custom table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Fitur</th>
+          <th class="text-center">Mean (sebelum)</th>
+          <th class="text-center">Std (sebelum)</th>
+          <th class="text-center">Mean (sesudah)</th>
+          <th class="text-center">Std (sesudah)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in stats_tabel %}
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;">{{ row.fitur }}</td>
+          <td class="text-center text-muted">{{ row.mean_sebelum }}</td>
+          <td class="text-center text-muted">{{ row.std_sebelum }}</td>
+          <td class="text-center text-accent2">≈ {{ row.mean_sesudah }}</td>
+          <td class="text-center text-accent">≈ {{ row.std_sesudah }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-2 mb-0" style="color:var(--text-muted);font-size:0.82rem;">
+    <i class="bi bi-lightbulb me-1 text-accent"></i>
+    Setelah StandardScaler: mean ≈ 0 dan standar deviasi ≈ 1 untuk semua fitur.
+  </p>
+</div>
+
+<!-- ── Plot Perbandingan Scaling ── -->
+<div class="card-dark">
+  <h5 class="mb-3">
+    <i class="bi bi-box-plot me-2 text-accent"></i>
+    Plot Distribusi Fitur: Sebelum vs Sesudah Scaling
+  </h5>
+  <img src="{{ url_for('static', filename=plot_path) }}"
+       alt="Perbandingan distribusi fitur sebelum dan sesudah scaling"
+       class="plot-img" />
+  <p class="mt-2 mb-0" style="color:var(--text-muted);font-size:0.82rem;">
+    Box plot menunjukkan bagaimana StandardScaler menyeragamkan rentang nilai semua fitur ke skala z-score.
+  </p>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Tampilkan/sembunyikan bagian upload berdasarkan pilihan radio
+  function toggleUploadSection() {
+    const optUpload = document.getElementById('opt-upload');
+    const section = document.getElementById('upload-section');
+    section.style.display = optUpload.checked ? 'block' : 'none';
+  }
+
+  document.getElementById('opt-default').addEventListener('change', toggleUploadSection);
+  document.getElementById('opt-upload').addEventListener('change', toggleUploadSection);
+
+  // Jalankan saat halaman dibuka (untuk mempertahankan state)
+  toggleUploadSection();
+</script>
+{% endblock %}

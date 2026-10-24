@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Beranda{% endblock %}
+
+{% block content %}
+<!-- ── Hero Section ── -->
+<div class="text-center py-5 mb-4">
+  <div class="badge-ml mb-3">
+    <i class="bi bi-cpu me-1"></i>Tugas Kuliah Machine Learning
+  </div>
+  <h1 class="display-5 fw-bold mb-3" style="color: var(--text);">
+    Unsupervised Learning
+    <span style="color: var(--accent);">Explorer</span>
+  </h1>
+  <p class="lead" style="color: var(--text-muted); max-width: 650px; margin: 0 auto 2rem;">
+    Eksplorasi interaktif algoritma klasterisasi dan reduksi dimensi
+    pada dataset <strong style="color: var(--text);">Breast Cancer Wisconsin</strong>.
+    Temukan pola tersembunyi dalam data sel kanker tanpa label.
+  </p>
+
+  <!-- Info Dataset Aktif -->
+  {% if info_dataset %}
+  <div class="d-flex flex-wrap gap-2 justify-content-center mb-4">
+    <span class="info-chip">
+      <i class="bi bi-table"></i>
+      {{ info_dataset.n_sampel }} sampel
+    </span>
+    <span class="info-chip">
+      <i class="bi bi-grid"></i>
+      {{ info_dataset.n_fitur }} fitur
+    </span>
+    <span class="info-chip">
+      <i class="bi bi-database"></i>
+      {% if info_dataset.sumber == 'default' %}Dataset Bawaan{% else %}CSV Diunggah{% endif %}
+    </span>
+    {% if info_dataset.ada_label %}
+    <span class="info-chip">
+      <i class="bi bi-tag"></i>
+      Label: {{ info_dataset.nama_label }}
+    </span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <a href="{{ url_for('preprocessing') }}" class="btn-primary-custom me-2">
+    <i class="bi bi-play-fill me-1"></i>Mulai Analisis
+  </a>
+  <a href="https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagnostic)"
+     target="_blank" class="btn-outline-custom">
+    <i class="bi bi-box-arrow-up-right me-1"></i>Info Dataset
+  </a>
+</div>
+
+<!-- ── Deskripsi Kasus ── -->
+<div class="card-dark mb-4">
+  <h4 class="mb-3">
+    <i class="bi bi-info-circle text-accent me-2"></i>Tentang Dataset
+  </h4>
+  <div class="row g-4">
+    <div class="col-md-7">
+      <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.8;">
+        Dataset <strong style="color: var(--text);">Breast Cancer Wisconsin (Diagnostic)</strong>
+        berisi hasil komputasi citra digital dari aspirasi jarum halus (FNA) benjolan payudara.
+        Setiap sampel merepresentasikan karakteristik inti sel tumor berdasarkan 30 fitur numerik
+        seperti radius, tekstur, perimeter, area, kehalusan permukaan, kekompakan, cekung, dan simetri.
+      </p>
+      <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.8; margin-top: 0.75rem;">
+        Dalam tugas ini, <strong style="color: var(--text);">label asli tidak digunakan saat klasterisasi</strong>
+        — seolah-olah kita tidak tahu apakah tumor bersifat ganas (malignant) atau jinak (benign).
+        Label asli hanya ditampilkan sebagai pembanding di akhir untuk mengevaluasi seberapa baik
+        algoritma menemukan kelompok alami dalam data.
+      </p>
+    </div>
+    <div class="col-md-5">
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-number">569</div>
+            <div class="stat-label">Total Sampel</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-number">30</div>
+            <div class="stat-label">Fitur Numerik</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-number" style="color: var(--accent3);">212</div>
+            <div class="stat-label">Ganas (Malignant)</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-number" style="color: var(--accent2);">357</div>
+            <div class="stat-label">Jinak (Benign)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Peta Navigasi ── -->
+<h4 class="mb-3" style="font-weight: 600;">
+  <i class="bi bi-map me-2 text-accent"></i>Navigasi Analisis
+</h4>
+<div class="row g-3">
+
+  <div class="col-md-4 col-sm-6">
+    <a href="{{ url_for('preprocessing') }}" class="text-decoration-none">
+      <div class="card-dark h-100" style="cursor:pointer;transition:border-color 0.2s;"
+           onmouseover="this.style.borderColor='var(--accent)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="background:rgba(88,166,255,0.12);border-radius:10px;padding:0.75rem;">
+            <i class="bi bi-filter fs-4 text-accent"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">Preprocessing</h5>
+            <small class="text-muted">Halaman 2</small>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.83rem;">
+          Pilih sumber data, lihat kualitas data, dan terapkan StandardScaler.
+        </p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4 col-sm-6">
+    <a href="{{ url_for('kmeans') }}" class="text-decoration-none">
+      <div class="card-dark h-100" style="cursor:pointer;transition:border-color 0.2s;"
+           onmouseover="this.style.borderColor='var(--accent2)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="background:rgba(63,185,80,0.12);border-radius:10px;padding:0.75rem;">
+            <i class="bi bi-people fs-4 text-accent2"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">K-Means</h5>
+            <small class="text-muted">Halaman 3</small>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.83rem;">
+          Klasterisasi K=2–10, Elbow Method, dan Silhouette Score untuk mencari K terbaik.
+        </p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4 col-sm-6">
+    <a href="{{ url_for('dbscan') }}" class="text-decoration-none">
+      <div class="card-dark h-100" style="cursor:pointer;transition:border-color 0.2s;"
+           onmouseover="this.style.borderColor='var(--accent3)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="background:rgba(247,129,102,0.12);border-radius:10px;padding:0.75rem;">
+            <i class="bi bi-scatter-chart fs-4 text-accent3"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">DBSCAN</h5>
+            <small class="text-muted">Halaman 4</small>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.83rem;">
+          Klasterisasi berbasis densitas, k-distance graph, dan eksplorasi parameter.
+        </p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4 col-sm-6">
+    <a href="{{ url_for('pca') }}" class="text-decoration-none">
+      <div class="card-dark h-100" style="cursor:pointer;transition:border-color 0.2s;"
+           onmouseover="this.style.borderColor='var(--accent)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="background:rgba(88,166,255,0.12);border-radius:10px;padding:0.75rem;">
+            <i class="bi bi-arrows-collapse fs-4 text-accent"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">PCA</h5>
+            <small class="text-muted">Halaman 5</small>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.83rem;">
+          Reduksi dimensi linear, explained variance, dan komponen untuk 85% varians.
+        </p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4 col-sm-6">
+    <a href="{{ url_for('tsne') }}" class="text-decoration-none">
+      <div class="card-dark h-100" style="cursor:pointer;transition:border-color 0.2s;"
+           onmouseover="this.style.borderColor='var(--accent2)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="background:rgba(63,185,80,0.12);border-radius:10px;padding:0.75rem;">
+            <i class="bi bi-map fs-4 text-accent2"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">t-SNE</h5>
+            <small class="text-muted">Halaman 6</small>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.83rem;">
+          Reduksi non-linear, perbandingan perplexity 5 / 30 / 50, dengan pencatatan waktu.
+        </p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4 col-sm-6">
+    <a href="{{ url_for('umap_page') }}" class="text-decoration-none">
+      <div class="card-dark h-100" style="cursor:pointer;transition:border-color 0.2s;"
+           onmouseover="this.style.borderColor='var(--accent3)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div style="background:rgba(247,129,102,0.12);border-radius:10px;padding:0.75rem;">
+            <i class="bi bi-graph-up fs-4 text-accent3"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">UMAP</h5>
+            <small class="text-muted">Halaman 7</small>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:0.83rem;">
+          Grid n_neighbors × min_dist, perbandingan waktu dengan t-SNE.
+        </p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-12">
+    <a href="{{ url_for('visualisasi') }}" class="text-decoration-none">
+      <div class="card-dark" style="cursor:pointer;transition:border-color 0.2s;
+           background: linear-gradient(135deg, rgba(88,166,255,0.05), rgba(63,185,80,0.05));"
+           onmouseover="this.style.borderColor='var(--accent)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <div class="d-flex align-items-center gap-3">
+          <div style="background:rgba(88,166,255,0.12);border-radius:10px;padding:0.75rem;">
+            <i class="bi bi-grid-3x2 fs-3 text-accent"></i>
+          </div>
+          <div>
+            <h5 class="mb-1">Visualisasi Gabungan</h5>
+            <p class="mb-0" style="color:var(--text-muted);font-size:0.85rem;">
+              Subplot lengkap: PCA | t-SNE | UMAP × K-Means | DBSCAN | Label Asli.
+              Bandingkan semua metode secara berdampingan.
+            </p>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>
+{% endblock %}

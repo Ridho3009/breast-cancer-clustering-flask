@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Unsupervised Learning{% endblock %} | ML Tugas</title>
+  <meta name="description" content="Aplikasi web Flask untuk tugas kuliah Machine Learning Unsupervised Learning – K-Means, DBSCAN, PCA, t-SNE, UMAP pada dataset Breast Cancer Wisconsin." />
+
+  <!-- Bootstrap 5 via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+
+  <style>
+    /* ── Variabel Warna ── */
+    :root {
+      --bg-dark: #2f3b52;
+      --bg-card: #3d4b66;
+      --bg-nav:  #3d4b66;
+      --accent:  #4c9aff;
+      --accent2: #2ee6a6;
+      --accent3: #ff9f43;
+      --text:    #ffffff;
+      --text-muted: #e2e8f0;
+      --border:  #5a6b8c;
+    }
+
+    /* ── Reset & Base ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ── */
+    .navbar-custom {
+      background: var(--bg-nav);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      color: var(--accent) !important;
+      font-size: 1.1rem;
+      letter-spacing: -0.3px;
+    }
+    .navbar-brand span { color: var(--text); }
+    .nav-link {
+      color: var(--text-muted) !important;
+      font-size: 0.88rem;
+      padding: 0.4rem 0.75rem !important;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .nav-link:hover {
+      color: #ffffff !important;
+      background: rgba(76, 154, 255, 0.15);
+    }
+    .nav-link.active {
+      color: #a5d1ff !important;
+      background: #51638a;
+    }
+
+    /* ── Layout Utama ── */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* ── Card ── */
+    .card-dark {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-dark h5, .card-dark h4, .card-dark h3 {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── Badge / Tag ── */
+    .badge-ml {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      border-radius: 6px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      display: inline-block;
+    }
+
+    /* ── Judul Halaman ── */
+    .page-header {
+      padding: 1.5rem 0 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .page-header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+    }
+
+    /* ── Tabel ── */
+    .table-dark-custom {
+      --bs-table-bg: transparent;
+      --bs-table-border-color: var(--border);
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    /* Header: biru sedang, teks putih tebal */
+    .table-dark-custom thead tr th {
+      background: #51638a !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      border-color: var(--border) !important;
+      white-space: nowrap;
+    }
+    /* Semua sel body: teks putih eksplisit */
+    .table-dark-custom tbody tr td,
+    .table-dark-custom tbody tr th {
+      color: #ffffff !important;
+      border-color: var(--border) !important;
+      vertical-align: middle;
+    }
+    /* Baris selang-seling */
+    .table-dark-custom.table-striped > tbody > tr:nth-of-type(odd) > * {
+      background-color: #3d4b66 !important;
+      color: #ffffff !important;
+    }
+    .table-dark-custom.table-striped > tbody > tr:nth-of-type(even) > * {
+      background-color: #46567a !important;
+      color: #ffffff !important;
+    }
+    /* Hover baris */
+    .table-dark-custom.table-hover > tbody > tr:hover > * {
+      background-color: #5a6b8c !important;
+      color: #ffffff !important;
+    }
+    /* Bootstrap table-dark override */
+    .table-dark td, .table-dark th { color: #ffffff !important; }
+
+    /* ── Plot Image ── */
+    .plot-img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #3d4b66;
+    }
+
+    /* ── Stat Number ── */
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 0.25rem;
+    }
+    .stat-box {
+      background: rgba(76, 154, 255, 0.1);
+      border: 1px solid rgba(76, 154, 255, 0.25);
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      text-align: center;
+    }
+
+    /* ── Alert Flash ── */
+    .alert { border-radius: 8px; font-size: 0.88rem; }
+
+    /* ── Form ── */
+    .form-control, .form-select {
+      background: #2f3b52;
+      border-color: var(--border);
+      color: #ffffff;
+      font-size: 0.88rem;
+    }
+    .form-control::placeholder { color: #cbd5e1; }
+    .form-control:focus, .form-select:focus {
+      background: #2f3b52;
+      border-color: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(76, 154, 255, 0.2);
+    }
+    .form-select option { background: #3d4b66; color: #ffffff; }
+    .form-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
+    .btn-primary-custom {
+      background: var(--accent);
+      border: none;
+      color: #0b1b33;
+      font-weight: 700;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+      display: inline-block;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn-primary-custom:hover {
+      background: #79c0ff;
+      color: #0b1b33;
+      transform: translateY(-1px);
+    }
+    .btn-outline-custom {
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: transparent;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+      display: inline-block;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn-outline-custom:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Info Chip ── */
+    .info-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .info-chip i { color: var(--accent); }
+
+    /* ── Highlight K Terbaik ── */
+    .row-highlight > td,
+    .row-highlight > th {
+      background: #2e6b4f !important;
+      color: #ffffff !important;
+    }
+    .text-accent { color: var(--accent); }
+    .text-accent2 { color: var(--accent2); }
+    .text-accent3 { color: var(--accent3); }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      background: var(--bg-nav);
+    }
+
+    /* ── Scroll ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+  <!-- ── Navbar ── -->
+  <nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="{{ url_for('beranda') }}">
+        <i class="bi bi-diagram-3-fill me-2"></i>ML<span>.Unsupervised</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+              data-bs-target="#navMenu" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto gap-1">
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'beranda' %}active{% endif %}"
+               href="{{ url_for('beranda') }}">
+              <i class="bi bi-house me-1"></i>Beranda
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'preprocessing' %}active{% endif %}"
+               href="{{ url_for('preprocessing') }}">
+              <i class="bi bi-filter me-1"></i>Preprocessing
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'kmeans' %}active{% endif %}"
+               href="{{ url_for('kmeans') }}">
+              <i class="bi bi-people me-1"></i>K-Means
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'dbscan' %}active{% endif %}"
+               href="{{ url_for('dbscan') }}">
+              <i class="bi bi-scatter-chart me-1"></i>DBSCAN
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'pca' %}active{% endif %}"
+               href="{{ url_for('pca') }}">
+              <i class="bi bi-arrows-collapse me-1"></i>PCA
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'tsne' %}active{% endif %}"
+               href="{{ url_for('tsne') }}">
+              <i class="bi bi-map me-1"></i>t-SNE
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'umap_page' %}active{% endif %}"
+               href="{{ url_for('umap_page') }}">
+              <i class="bi bi-graph-up me-1"></i>UMAP
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'visualisasi' %}active{% endif %}"
+               href="{{ url_for('visualisasi') }}">
+              <i class="bi bi-grid-3x2 me-1"></i>Gabungan
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Flash Messages ── -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container-fluid px-4 mt-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ── Konten Utama ── -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <i class="bi bi-cpu me-1"></i>
+    Tugas Kuliah Machine Learning – Unsupervised Learning &nbsp;|&nbsp;
+    Dataset: Breast Cancer Wisconsin (UCI) &nbsp;|&nbsp;
+    Built with Flask &amp; scikit-learn
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

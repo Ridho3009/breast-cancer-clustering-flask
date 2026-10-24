@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+
+# Flask
+instance/
+.env
+flask_session/
+
+# Uploads (file sementara dari pengguna)
+uploads/*
+!uploads/.gitkeep
+
+# Plot yang digenerate (bisa digenerate ulang)
+static/plots/*.png
+!static/plots/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache aplikasi
+cache/
+*.cache

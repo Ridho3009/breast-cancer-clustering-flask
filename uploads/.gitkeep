@@ -1,0 +1,2 @@
+# File ini hanya untuk memastikan folder uploads/ tetap ada di repositori git.
+# File CSV yang diunggah pengguna disimpan di folder ini dan sudah di .gitignore.
